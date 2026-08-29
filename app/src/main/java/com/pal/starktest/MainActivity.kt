@@ -5,14 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.pal.starktest.features.app.StarkApp
-import com.pal.starktest.ui.theme.StarkTestTheme
+import com.pal.starktest.ui.theme.StarkTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            StarkTestTheme {
+            StarkTheme {
                 StarkApp()
             }
         }

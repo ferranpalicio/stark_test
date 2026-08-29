@@ -13,9 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.pal.starktest.domain.model.BikeOverview
 import com.pal.starktest.features.common.UiState
+import com.pal.starktest.ui.theme.StarkTheme
 
 @Composable
 fun BikeDataScreen(
@@ -33,8 +33,10 @@ fun BikeDataScreen(
 @Composable
 private fun Content(data: BikeOverview, modifier: Modifier) {
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(StarkTheme.dimens.spacingLarge),
+        verticalArrangement = Arrangement.spacedBy(StarkTheme.dimens.spacingMedium),
     ) {
         item { InfoCard("Model", "${data.bike.model} ${data.bike.variant}") }
         item { InfoCard("Firmware", data.bike.firmwareVersion) }
@@ -49,7 +51,11 @@ private fun Content(data: BikeOverview, modifier: Modifier) {
                 },
             )
         }
-        item { InfoCard("Fault codes", data.diagnostics.faultCodes.joinToString().ifEmpty { "None" }) }
+        item {
+            InfoCard(
+                "Fault codes",
+                data.diagnostics.faultCodes.joinToString().ifEmpty { "None" })
+        }
         items(data.diagnostics.warnings) { warning ->
             InfoCard("Warning: ${warning.code}", warning.message)
         }
@@ -59,7 +65,7 @@ private fun Content(data: BikeOverview, modifier: Modifier) {
 @Composable
 private fun InfoCard(title: String, value: String) {
     Card {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(StarkTheme.dimens.spacingLarge)) {
             Text(title, style = MaterialTheme.typography.labelMedium)
             Text(value, style = MaterialTheme.typography.titleMedium)
         }
@@ -78,7 +84,9 @@ private fun LoadingState(modifier: Modifier) {
 @Composable
 private fun EmptyState(modifier: Modifier, message: String) {
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(StarkTheme.dimens.spacingExtraLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) { Text(message, style = MaterialTheme.typography.bodyLarge) }

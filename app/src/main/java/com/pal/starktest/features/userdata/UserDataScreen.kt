@@ -11,9 +11,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.pal.starktest.domain.model.User
 import com.pal.starktest.features.common.UiState
+import com.pal.starktest.ui.theme.StarkTheme
 
 @Composable
 fun UserDataScreen(
@@ -31,8 +31,8 @@ fun UserDataScreen(
 @Composable
 private fun Content(data: User, modifier: Modifier) {
     Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize().padding(StarkTheme.dimens.spacingLarge),
+        verticalArrangement = Arrangement.spacedBy(StarkTheme.dimens.spacingLarge),
     ) {
         InfoCard("Name", data.name)
         InfoCard("Email", data.email)
@@ -44,7 +44,7 @@ private fun Content(data: User, modifier: Modifier) {
 @Composable
 private fun InfoCard(title: String, value: String) {
     Card {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(StarkTheme.dimens.spacingLarge)) {
             Text(title, style = MaterialTheme.typography.labelMedium)
             Text(value, style = MaterialTheme.typography.titleMedium)
         }
@@ -63,7 +63,7 @@ private fun LoadingState(modifier: Modifier) {
 @Composable
 private fun EmptyState(modifier: Modifier, message: String) {
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier.fillMaxSize().padding(StarkTheme.dimens.spacingExtraLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) { Text(message, style = MaterialTheme.typography.bodyLarge) }

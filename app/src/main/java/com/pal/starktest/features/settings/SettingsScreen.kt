@@ -10,7 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.pal.starktest.ui.theme.StarkTheme
 
 @Composable
 fun SettingsScreen(
@@ -18,10 +18,14 @@ fun SettingsScreen(
     onRidingChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
+    Column(modifier = modifier
+        .fillMaxWidth()
+        .padding(StarkTheme.dimens.spacingLarge)) {
         Text("Simulation", style = MaterialTheme.typography.titleMedium)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = StarkTheme.dimens.spacingMedium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(checked = isRiding, onCheckedChange = onRidingChanged)

@@ -13,9 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.pal.starktest.domain.model.BikeTelemetry
 import com.pal.starktest.features.common.UiState
+import com.pal.starktest.ui.theme.StarkTheme
 
 @Composable
 fun BikeLiveScreen(
@@ -35,8 +35,8 @@ fun BikeLiveScreen(
 @Composable
 private fun LiveContent(data: BikeTelemetry, modifier: Modifier) {
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize().padding(StarkTheme.dimens.spacingLarge),
+        verticalArrangement = Arrangement.spacedBy(StarkTheme.dimens.spacingLarge),
     ) {
         item { InfoCard("Battery", "${data.battery.stateOfChargePct}% · ${data.battery.estimatedRangeKm} km range") }
         item { InfoCard("Power", "${data.motor.powerHp} hp / ${data.rideSettings.maxPowerHp} hp max") }
@@ -53,7 +53,7 @@ private fun LiveContent(data: BikeTelemetry, modifier: Modifier) {
 @Composable
 private fun InfoCard(title: String, value: String) {
     Card {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(StarkTheme.dimens.spacingLarge)) {
             Text(title, style = MaterialTheme.typography.labelMedium)
             Text(value, style = MaterialTheme.typography.titleMedium)
         }
@@ -74,7 +74,7 @@ private fun LoadingState(modifier: Modifier) {
 @Composable
 private fun EmptyState(modifier: Modifier, message: String) {
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier.fillMaxSize().padding(StarkTheme.dimens.spacingExtraLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
