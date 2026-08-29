@@ -1,0 +1,40 @@
+{
+  "bike": {
+    "model": "Stark VARG MX 1.2",
+    "variant": "Alpha",
+    "firmware_version": "3.4.1",
+    "image_url": "https://assets.starkfuture.com/frontend-assets/mx-product-images/SMX1_side_stand_red_handbrake_enduro18_nosidestand.webp"
+  },
+  "timestamp": "2025-05-19T10:32:45Z",
+  "battery": {
+    "state_of_charge_pct": 73,
+    "estimated_range_km": 38,
+    "temperature_c": 34.7,
+    "charging_state": "discharging"
+  },
+  "motor": {
+    "power_hp": 52.4,
+    "temperature_c": 61.2
+  },
+  "ride_settings": {
+    "power_map": "enduro",
+    "max_power_hp": 80,
+    "engine_braking_pct": 45,
+    "regen_pct": 60
+  },
+  "session": {
+    "duration_s": 3742,
+    "distance_km": 24.7,
+    "max_speed_kmh": 94.1
+  },
+  "diagnostics": {
+    "fault_codes": [],
+    "warnings": [
+      {
+        "code": "W_MOT_TEMP_HIGH",
+        "message": "Motor temperature elevated",
+        "severity": "warning"
+      }
+    ]
+  }
+}
