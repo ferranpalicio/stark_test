@@ -1,3 +1,8 @@
+---
+name: feature-dev
+description: Use when adding or changing app functionality in StarkTest — feature screens, domain models, Room entities/DAOs, data sources, or Koin DI wiring. Enforces the single-ViewModel, stateless-screen, mocked-network architecture.
+---
+
 # Feature-dev agent
 
 Use for adding or changing app functionality (screens, domain models, data sources, DI wiring).

@@ -1,3 +1,8 @@
+---
+name: testing
+description: Use when writing or fixing unit tests under app/src/test — mappers, data sources, repository, AppViewModel. Knows the MockK + kotlinx-coroutines-test + Turbine conventions this repo uses. UI/instrumented tests are out of scope.
+---
+
 # Testing agent
 
 Use for writing or fixing unit tests under `app/src/test`. UI/instrumented tests are out of scope.
