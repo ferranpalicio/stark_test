@@ -25,13 +25,31 @@ class AppViewModel(
 
     init {
         loadUser()
-        loadBikeOverview()
+        viewModelScope.launch { refreshHistory() }
     }
 
     fun setRiding(riding: Boolean) {
         if (uiState.value.isRiding == riding) return
         uiState.update { it.copy(isRiding = riding) }
-        if (riding) startTelemetry() else stopTelemetry()
+        if (riding) startTelemetry() else endRide()
+    }
+
+    /**
+     * The ride is whatever the telemetry flow last emitted, so read it before [stopTelemetry]
+     * clears it. A ride that never got past its first tick has nothing worth recording.
+     *
+     * Flipping the toggle off is the *only* way a ride reaches history: nothing is written while it
+     * runs, so a process death during a ride discards it.
+     */
+    private fun endRide() {
+        val session = (uiState.value.liveTelemetry as? UiState.Success)?.data?.session
+        stopTelemetry()
+        viewModelScope.launch {
+            if (session != null && session.durationS > 0) {
+                runCatching { repository.saveSession(session) }
+            }
+            refreshHistory()
+        }
     }
 
     private fun loadUser() {
@@ -43,13 +61,24 @@ class AppViewModel(
         }
     }
 
-    private fun loadBikeOverview() {
-        viewModelScope.launch {
-            uiState.update { it.copy(bikeOverview = UiState.Loading) }
-            runCatching { repository.getBikeOverview() }
-                .onSuccess { overview -> uiState.update { it.copy(bikeOverview = UiState.Success(overview)) } }
-                .onFailure { e -> uiState.update { it.copy(bikeOverview = UiState.Error(e.message ?: "Unknown error")) } }
-        }
+    /** Both reads depend on the just-ended ride being saved, hence the shared call site. */
+    private suspend fun refreshHistory() {
+        loadSessions()
+        loadBikeOverview()
+    }
+
+    private suspend fun loadSessions() {
+        uiState.update { it.copy(sessions = UiState.Loading) }
+        runCatching { repository.getSessions() }
+            .onSuccess { sessions -> uiState.update { it.copy(sessions = UiState.Success(sessions)) } }
+            .onFailure { e -> uiState.update { it.copy(sessions = UiState.Error(e.message ?: "Unknown error")) } }
+    }
+
+    private suspend fun loadBikeOverview() {
+        uiState.update { it.copy(bikeOverview = UiState.Loading) }
+        runCatching { repository.getBikeOverview() }
+            .onSuccess { overview -> uiState.update { it.copy(bikeOverview = UiState.Success(overview)) } }
+            .onFailure { e -> uiState.update { it.copy(bikeOverview = UiState.Error(e.message ?: "Unknown error")) } }
     }
 
     private fun startTelemetry() {

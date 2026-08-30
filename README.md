@@ -22,12 +22,13 @@ riding-simulation toggle, built as a single-`Activity` Compose app.
   rider, so `user`, `bike`, `batterySummary`, `rideSettings` and `diagnostics` live in a typed
   `DataStore<StarkPreferences>` (JSON via kotlinx-serialization) rather than in single-row tables —
   "zero or one value" is what a nullable field expresses natively, with no schema or migration.
-  Room keeps the one genuinely multi-row dataset: `session`, one row per *completed* ride.
-- **A ride in progress is single-valued too.** Its running totals are rewritten to
-  `StarkPreferences.activeSession` on every telemetry tick and only become a `session` row when the
-  ride ends, so a process death costs at most one tick and never leaves a half-written row in the
-  history list. Backgrounding the app ends the ride (`ON_STOP` → `AppViewModel.onAppStopped()`); a
-  kill that skips `ON_STOP` is recovered by committing the leftover active session at next launch.
+  Room keeps the one genuinely multi-row dataset: `session`, one row per completed ride.
+- **A ride in progress isn't stored at all.** It *is* the telemetry `Flow`, started once when the
+  riding toggle flips on; its running totals live in `AppUiState` and reach Room exactly once, when
+  the toggle flips back off. That single transition is the whole persistence rule — no lifecycle
+  hooks, no half-written state to reconcile at startup, no second copy of the session to keep in
+  sync. The cost is that a ride is lost if the process dies while it's running, which is an
+  acceptable trade for a simulated ride.
 - **No networking library.** Retrofit/OkHttp are deliberately absent — `NetworkDataSourceImpl`
   returns a hardcoded `User` after a simulated delay, and `BikeTelemetryDataSourceImpl` derives
   incrementally-changing telemetry from a bundled `assets/bike_telemetry.json` template, emitting

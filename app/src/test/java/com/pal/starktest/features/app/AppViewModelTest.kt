@@ -15,9 +15,11 @@ import com.pal.starktest.domain.model.User
 import com.pal.starktest.domain.repository.BikeRepository
 import com.pal.starktest.features.common.UiState
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -43,13 +45,14 @@ class AppViewModelTest {
         lastSession = null,
         diagnostics = Diagnostics(emptyList(), emptyList()),
     )
+    private val sessions = listOf(Session(id = 1, durationS = 120, distanceKm = 2.0, maxSpeedKmh = 50.0))
     private val telemetry = BikeTelemetry(
         bike = overview.bike,
         timestamp = java.time.Instant.parse("2025-01-01T00:00:00Z"),
         battery = Battery(90, 50, 30.0, ChargingState.DISCHARGING),
         motor = Motor(50.0, 60.0),
         rideSettings = overview.rideSettings,
-        session = Session(durationS = 0, distanceKm = 0.0, maxSpeedKmh = 0.0),
+        session = Session(durationS = 15, distanceKm = 0.2, maxSpeedKmh = 40.0),
         diagnostics = overview.diagnostics,
         currentSpeedKmh = 40.0,
     )
@@ -67,25 +70,39 @@ class AppViewModelTest {
     private fun viewModel(): AppViewModel {
         coEvery { repository.getUser() } returns user
         coEvery { repository.getBikeOverview() } returns overview
+        coEvery { repository.getSessions() } returns sessions
+        coEvery { repository.saveSession(any()) } returns Unit
         return AppViewModel(repository)
     }
 
     @Test
-    fun `init loads user and bike overview`() = runTest {
+    fun `init loads user, bike overview and sessions`() = runTest {
         val vm = viewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value
         assertEquals(UiState.Success(user), state.user)
         assertEquals(UiState.Success(overview), state.bikeOverview)
+        assertEquals(UiState.Success(sessions), state.sessions)
         assertEquals(UiState.Empty, state.liveTelemetry)
         assertTrue(!state.isRiding)
+    }
+
+    @Test
+    fun `init starts not riding and writes nothing to history`() = runTest {
+        val vm = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // The app always launches idle; there is no in-progress ride to recover.
+        assertTrue(!vm.uiState.value.isRiding)
+        coVerify(exactly = 0) { repository.saveSession(any()) }
     }
 
     @Test
     fun `loadUser surfaces repository failure as error state`() = runTest {
         coEvery { repository.getUser() } throws IllegalStateException("boom")
         coEvery { repository.getBikeOverview() } returns overview
+        coEvery { repository.getSessions() } returns sessions
 
         val vm = AppViewModel(repository)
         dispatcher.scheduler.advanceUntilIdle()
@@ -107,18 +124,52 @@ class AppViewModelTest {
     }
 
     @Test
-    fun `setRiding false stops telemetry and clears state`() = runTest {
+    fun `setRiding false saves the last emitted session and refreshes history`() = runTest {
         val vm = viewModel()
         dispatcher.scheduler.advanceUntilIdle()
         coEvery { repository.observeLiveTelemetry() } returns flowOf(telemetry)
         vm.setRiding(true)
         dispatcher.scheduler.advanceUntilIdle()
+        val ended = sessions + Session(id = 2, durationS = 15, distanceKm = 0.2, maxSpeedKmh = 40.0)
+        coEvery { repository.getSessions() } returns ended
 
         vm.setRiding(false)
         dispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(!vm.uiState.value.isRiding)
         assertEquals(UiState.Empty, vm.uiState.value.liveTelemetry)
+        assertEquals(UiState.Success(ended), vm.uiState.value.sessions)
+        coVerify(exactly = 1) { repository.saveSession(telemetry.session) }
+    }
+
+    @Test
+    fun `setRiding false does not save a ride that produced no telemetry`() = runTest {
+        val vm = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        coEvery { repository.observeLiveTelemetry() } returns emptyFlow()
+        vm.setRiding(true)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.setRiding(false)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { repository.saveSession(any()) }
+    }
+
+    @Test
+    fun `setRiding false does not save a ride still on its first tick`() = runTest {
+        val vm = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        val zeroed = telemetry.copy(session = Session(durationS = 0, distanceKm = 0.0, maxSpeedKmh = 0.0))
+        coEvery { repository.observeLiveTelemetry() } returns flowOf(zeroed)
+        vm.setRiding(true)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.setRiding(false)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // A zero-duration ride is noise in the history list.
+        coVerify(exactly = 0) { repository.saveSession(any()) }
     }
 
     @Test
@@ -131,5 +182,20 @@ class AppViewModelTest {
 
         assertTrue(!vm.uiState.value.isRiding)
         assertEquals(UiState.Empty, vm.uiState.value.liveTelemetry)
+        coVerify(exactly = 0) { repository.saveSession(any()) }
+    }
+
+    @Test
+    fun `a ride still running is never written to history`() = runTest {
+        val vm = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        coEvery { repository.observeLiveTelemetry() } returns flowOf(telemetry)
+
+        vm.setRiding(true)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Only the toggle going false saves; a process death here loses the ride, by design.
+        assertTrue(vm.uiState.value.isRiding)
+        coVerify(exactly = 0) { repository.saveSession(any()) }
     }
 }

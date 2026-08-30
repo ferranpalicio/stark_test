@@ -2,7 +2,7 @@ package com.pal.starktest.features.app
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
-import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.PedalBike
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -32,6 +32,12 @@ sealed interface AppDestination : NavKey {
     }
 
     @Serializable
+    data object Sessions : AppDestination {
+        override val label get() = "Sessions"
+        override val icon get() = Icons.AutoMirrored.Filled.List
+    }
+
+    @Serializable
     data object UserData : AppDestination {
         override val label get() = "User"
         override val icon get() = Icons.Filled.Person
@@ -44,6 +50,13 @@ sealed interface AppDestination : NavKey {
     }
 
     companion object {
-        val bottomItems = listOf(BikeLive, BikeData, UserData, Settings)
+        private val ridingItems = listOf(BikeLive, BikeData, UserData, Settings)
+        private val idleItems = listOf(BikeData, Sessions, UserData, Settings)
+
+        /**
+         * The bar swaps one slot with the ride: live telemetry is only meaningful mid-ride, and
+         * session history is what you want the rest of the time.
+         */
+        fun itemsFor(isRiding: Boolean) = if (isRiding) ridingItems else idleItems
     }
 }
