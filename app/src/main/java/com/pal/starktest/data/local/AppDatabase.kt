@@ -2,30 +2,22 @@ package com.pal.starktest.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.pal.starktest.data.local.dao.BikeDao
-import com.pal.starktest.data.local.dao.UserDao
-import com.pal.starktest.data.local.entity.BatterySummaryEntity
-import com.pal.starktest.data.local.entity.BikeEntity
-import com.pal.starktest.data.local.entity.DiagnosticsEntity
-import com.pal.starktest.data.local.entity.RideSettingsEntity
+import com.pal.starktest.data.local.dao.SessionDao
 import com.pal.starktest.data.local.entity.SessionEntity
-import com.pal.starktest.data.local.entity.UserEntity
 
+/**
+ * Version 2 dropped the five single-row tables (user, bike, battery_summary, ride_settings,
+ * diagnostics) in favour of a typed DataStore; only session history remains. The upgrade is
+ * destructive on purpose — those tables were caches of telemetry that re-populates on the next
+ * tick, so there is nothing worth migrating.
+ */
 @Database(
-    entities = [
-        UserEntity::class,
-        BikeEntity::class,
-        BatterySummaryEntity::class,
-        RideSettingsEntity::class,
-        SessionEntity::class,
-        DiagnosticsEntity::class,
-    ],
+    entities = [SessionEntity::class],
     version = 1,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun userDao(): UserDao
-    abstract fun bikeDao(): BikeDao
+    abstract fun sessionDao(): SessionDao
 
     companion object {
         const val NAME = "stark_test.db"

@@ -1,13 +1,12 @@
 package com.pal.starktest.data.local
 
-import com.pal.starktest.data.local.dao.BikeDao
-import com.pal.starktest.data.local.dao.UserDao
-import com.pal.starktest.data.local.entity.BatterySummaryEntity
-import com.pal.starktest.data.local.entity.BikeEntity
-import com.pal.starktest.data.local.entity.DiagnosticsEntity
-import com.pal.starktest.data.local.entity.RideSettingsEntity
+import androidx.datastore.core.DataStore
+import androidx.datastore.core.DataStoreFactory
+import com.pal.starktest.data.local.dao.SessionDao
+import com.pal.starktest.data.local.datastore.RideSettingsPrefs
+import com.pal.starktest.data.local.datastore.StarkPreferences
+import com.pal.starktest.data.local.datastore.StarkPreferencesSerializer
 import com.pal.starktest.data.local.entity.SessionEntity
-import com.pal.starktest.data.local.entity.UserEntity
 import com.pal.starktest.domain.model.BatterySummary
 import com.pal.starktest.domain.model.Bike
 import com.pal.starktest.domain.model.Diagnostics
@@ -20,142 +19,141 @@ import com.pal.starktest.domain.model.WarningSeverity
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import java.io.File
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
+/**
+ * Runs against a real file-backed DataStore rather than a mock: the round trip through JSON is the
+ * part worth covering, and DataStore on the JVM needs nothing but a writable file. The session DAO
+ * stays mocked, matching how the rest of the suite treats Room.
+ */
 class LocalDataSourceImplTest {
 
-    private val userDao: UserDao = mockk()
-    private val bikeDao: BikeDao = mockk()
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    private val sessionDao: SessionDao = mockk()
+    private lateinit var dataStore: DataStore<StarkPreferences>
     private lateinit var dataSource: LocalDataSourceImpl
 
     @Before
     fun setUp() {
-        dataSource = LocalDataSourceImpl(userDao, bikeDao, Json)
+        dataStore = DataStoreFactory.create(
+            serializer = StarkPreferencesSerializer,
+            // Deliberately not created up front — a missing file is how DataStore represents
+            // "first launch", and that is what the null-returning getters below assert.
+            produceFile = { File(temporaryFolder.newFolder(), StarkPreferencesSerializer.FILE_NAME) },
+        )
+        dataSource = LocalDataSourceImpl(dataStore, sessionDao)
     }
 
     @Test
-    fun `getUser returns null when nothing stored`() = runTest {
-        coEvery { userDao.get() } returns null
-
+    fun `getters return null when nothing stored`() = runTest {
         assertNull(dataSource.getUser())
+        assertNull(dataSource.getBike())
+        assertNull(dataSource.getBatterySummary())
+        assertNull(dataSource.getRideSettings())
+        assertNull(dataSource.getDiagnostics())
     }
 
     @Test
-    fun `getUser maps entity to domain`() = runTest {
-        coEvery { userDao.get() } returns UserEntity(email = "a@b.com", name = "A B", phone = "123", country = "ES")
+    fun `saveUser round trips through data store`() = runTest {
+        val user = User(email = "a@b.com", name = "A B", phone = "123", country = "ES")
 
-        val user = dataSource.getUser()
+        dataSource.saveUser(user)
 
-        assertEquals(User(email = "a@b.com", name = "A B", phone = "123", country = "ES"), user)
+        assertEquals(user, dataSource.getUser())
     }
 
     @Test
-    fun `saveUser upserts mapped entity`() = runTest {
-        coEvery { userDao.upsert(any()) } returns Unit
-
+    fun `saveUser keeps null optional fields null`() = runTest {
         dataSource.saveUser(User(email = "a@b.com", name = "A B", phone = null, country = null))
 
-        coVerify { userDao.upsert(UserEntity(email = "a@b.com", name = "A B", phone = null, country = null)) }
+        val stored = dataSource.getUser()
+
+        assertNull(stored?.phone)
+        assertNull(stored?.country)
     }
 
     @Test
-    fun `getBike maps entity to domain`() = runTest {
-        coEvery { bikeDao.getBike() } returns BikeEntity(
-            model = "VARG",
-            variant = "Alpha",
-            firmwareVersion = "1.0",
-            imageUrl = "url",
-        )
+    fun `saveBike round trips through data store`() = runTest {
+        val bike = Bike(model = "VARG", variant = "Alpha", firmwareVersion = "1.0", imageUrl = "url")
 
-        val bike = dataSource.getBike()
+        dataSource.saveBike(bike)
 
-        assertEquals(Bike(model = "VARG", variant = "Alpha", firmwareVersion = "1.0", imageUrl = "url"), bike)
+        assertEquals(bike, dataSource.getBike())
     }
 
     @Test
-    fun `getBatterySummary maps entity to domain`() = runTest {
-        coEvery { bikeDao.getBatterySummary() } returns BatterySummaryEntity(stateOfChargePct = 80, estimatedRangeKm = 40)
+    fun `saveBatterySummary round trips through data store`() = runTest {
+        val summary = BatterySummary(stateOfChargePct = 80, estimatedRangeKm = 40)
 
-        val summary = dataSource.getBatterySummary()
+        dataSource.saveBatterySummary(summary)
 
-        assertEquals(BatterySummary(stateOfChargePct = 80, estimatedRangeKm = 40), summary)
+        assertEquals(summary, dataSource.getBatterySummary())
     }
 
     @Test
-    fun `getRideSettings falls back to ECO for unknown stored power map`() = runTest {
-        coEvery { bikeDao.getRideSettings() } returns RideSettingsEntity(
-            powerMap = "not-a-real-map",
+    fun `saveRideSettings round trips through data store`() = runTest {
+        val settings = RideSettings(
+            powerMap = PowerMap.RALLY,
             maxPowerHp = 80.0,
             engineBrakingPct = 10,
             regenPct = 20,
         )
 
-        val settings = dataSource.getRideSettings()
+        dataSource.saveRideSettings(settings)
 
-        assertEquals(PowerMap.ECO, settings?.powerMap)
+        assertEquals(settings, dataSource.getRideSettings())
     }
 
     @Test
     fun `saveRideSettings stores power map lowercased`() = runTest {
-        coEvery { bikeDao.upsertRideSettings(any()) } returns Unit
-
         dataSource.saveRideSettings(
             RideSettings(powerMap = PowerMap.RALLY, maxPowerHp = 80.0, engineBrakingPct = 10, regenPct = 20),
         )
 
-        coVerify {
-            bikeDao.upsertRideSettings(
-                RideSettingsEntity(powerMap = "rally", maxPowerHp = 80.0, engineBrakingPct = 10, regenPct = 20),
+        assertEquals("rally", dataStore.data.first().rideSettings?.powerMap)
+    }
+
+    @Test
+    fun `getRideSettings falls back to ECO for unknown stored power map`() = runTest {
+        dataStore.updateData { preferences ->
+            preferences.copy(
+                rideSettings = RideSettingsPrefs(
+                    powerMap = "not-a-real-map",
+                    maxPowerHp = 80.0,
+                    engineBrakingPct = 10,
+                    regenPct = 20,
+                ),
             )
         }
+
+        assertEquals(PowerMap.ECO, dataSource.getRideSettings()?.powerMap)
     }
 
     @Test
-    fun `getLastSession maps entity to domain`() = runTest {
-        coEvery { bikeDao.getLastSession() } returns SessionEntity(id = 5, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0)
-
-        val session = dataSource.getLastSession()
-
-        assertEquals(Session(id = 5, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0), session)
-    }
-
-    @Test
-    fun `saveSession returns row id from dao`() = runTest {
-        coEvery { bikeDao.upsertSession(any()) } returns 7L
-
-        val id = dataSource.saveSession(Session(id = 0, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0))
-
-        assertEquals(7L, id)
-        coVerify { bikeDao.upsertSession(SessionEntity(id = 0, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0)) }
-    }
-
-    @Test
-    fun `getDiagnostics decodes json columns`() = runTest {
-        coEvery { bikeDao.getDiagnostics() } returns DiagnosticsEntity(
-            faultCodesJson = """["E01"]""",
-            warningsJson = """[{"code":"W1","message":"msg","severity":"critical"}]""",
+    fun `saveDiagnostics round trips nested warnings`() = runTest {
+        val diagnostics = Diagnostics(
+            faultCodes = listOf("E01"),
+            warnings = listOf(Warning(code = "W1", message = "msg", severity = WarningSeverity.CRITICAL)),
         )
 
-        val diagnostics = dataSource.getDiagnostics()
+        dataSource.saveDiagnostics(diagnostics)
 
-        assertEquals(
-            Diagnostics(
-                faultCodes = listOf("E01"),
-                warnings = listOf(Warning(code = "W1", message = "msg", severity = WarningSeverity.CRITICAL)),
-            ),
-            diagnostics,
-        )
+        assertEquals(diagnostics, dataSource.getDiagnostics())
     }
 
     @Test
-    fun `saveDiagnostics encodes fields as json`() = runTest {
-        coEvery { bikeDao.upsertDiagnostics(any()) } returns Unit
-
+    fun `saveDiagnostics stores severity lowercased`() = runTest {
         dataSource.saveDiagnostics(
             Diagnostics(
                 faultCodes = listOf("E01"),
@@ -163,13 +161,53 @@ class LocalDataSourceImplTest {
             ),
         )
 
-        coVerify {
-            bikeDao.upsertDiagnostics(
-                DiagnosticsEntity(
-                    faultCodesJson = """["E01"]""",
-                    warningsJson = """[{"code":"W1","message":"msg","severity":"info"}]""",
-                ),
-            )
-        }
+        assertEquals("info", dataStore.data.first().diagnostics?.warnings?.single()?.severity)
+    }
+
+    @Test
+    fun `saves are independent of each other`() = runTest {
+        dataSource.saveUser(User(email = "a@b.com", name = "A B"))
+        dataSource.saveBike(Bike(model = "VARG", variant = "Alpha", firmwareVersion = "1.0", imageUrl = "url"))
+
+        assertEquals("a@b.com", dataSource.getUser()?.email)
+        assertEquals("VARG", dataSource.getBike()?.model)
+    }
+
+    @Test
+    fun `getLastSession maps entity to domain`() = runTest {
+        coEvery { sessionDao.getLastSession() } returns
+            SessionEntity(id = 5, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0)
+
+        val session = dataSource.getLastSession()
+
+        assertEquals(Session(id = 5, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0), session)
+    }
+
+    @Test
+    fun `getSessions maps every entity to domain`() = runTest {
+        coEvery { sessionDao.getSessions() } returns listOf(
+            SessionEntity(id = 2, durationS = 120, distanceKm = 2.0, maxSpeedKmh = 40.0),
+            SessionEntity(id = 1, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0),
+        )
+
+        val sessions = dataSource.getSessions()
+
+        assertEquals(
+            listOf(
+                Session(id = 2, durationS = 120, distanceKm = 2.0, maxSpeedKmh = 40.0),
+                Session(id = 1, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0),
+            ),
+            sessions,
+        )
+    }
+
+    @Test
+    fun `saveSession returns row id from dao`() = runTest {
+        coEvery { sessionDao.upsertSession(any()) } returns 7L
+
+        val id = dataSource.saveSession(Session(id = 0, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0))
+
+        assertEquals(7L, id)
+        coVerify { sessionDao.upsertSession(SessionEntity(id = 0, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0)) }
     }
 }

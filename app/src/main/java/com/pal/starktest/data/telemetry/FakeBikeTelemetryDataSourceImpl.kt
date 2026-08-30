@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val ASSET_FILE_NAME = "bike_telemetry.json"
 private const val TICK_INTERVAL_MS = 60_000L
@@ -24,7 +25,7 @@ private const val TICK_INTERVAL_MS = 60_000L
  * as a template; each tick derives mock, incrementally-changing values from it rather than
  * emitting a frozen copy, so the "Bike live" screen visibly updates every minute.
  */
-class BikeTelemetryDataSourceImpl(
+class FakeBikeTelemetryDataSourceImpl(
     private val context: Context,
     private val json: Json,
 ) : BikeTelemetryDataSource {
@@ -50,15 +51,13 @@ class BikeTelemetryDataSourceImpl(
                     stateOfChargePct = max(0, base.battery.stateOfChargePct - tick),
                     estimatedRangeKm = max(0, base.battery.estimatedRangeKm - tick / 2),
                 ),
-                motor = base.motor.copy(
-                    temperatureC = base.motor.temperatureC + sin(tick * 0.3) * 4,
-                ),
+                motor = base.motor,
                 session = session,
             )
 
             emit(telemetry)
 
-            delay(TICK_INTERVAL_MS)
+            delay(TICK_INTERVAL_MS.milliseconds)
             tick += 1
             timestamp = timestamp.plusSeconds(60)
             session = session.copy(
@@ -74,11 +73,15 @@ class BikeTelemetryDataSourceImpl(
 
     /** Deterministic mock speed curve so the live screen has believable, varying values. */
     private fun mockCurrentSpeedKmh(tick: Int): Double =
-        (50.0 + 35.0 * sin(tick * 0.5)).let { abs(it) }.let { min(it, 120.0) }
+        min(
+            abs((50.0 + 35.0 * sin(tick * 0.5))),
+            120.0
+        )
 
     private fun loadTemplate(): BikeTelemetryDto {
         cachedTemplate?.let { return it }
         val raw = context.assets.open(ASSET_FILE_NAME).bufferedReader().use { it.readText() }
-        return json.decodeFromString(BikeTelemetryDto.serializer(), raw).also { cachedTemplate = it }
+        return json.decodeFromString(BikeTelemetryDto.serializer(), raw)
+            .also { cachedTemplate = it }
     }
 }

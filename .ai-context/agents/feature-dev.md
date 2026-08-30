@@ -13,9 +13,11 @@ Use for adding or changing app functionality (screens, domain models, data sourc
   callbacks from `StarkApp`.
 - New shared state goes on `AppUiState`, updated from `AppViewModel`. Do not create a second
   ViewModel — this project's architecture mandates exactly one, at the nav root.
-- New persisted data: add a Room entity/DAO method in `data/local`, a domain model in
-  `domain/model`, and route reads/writes through `BikeRepository`/`LocalDataSource` — don't access
-  DAOs directly from feature code or the ViewModel.
+- New persisted data: add a domain model in `domain/model`, then pick storage by cardinality — a
+  single value becomes a nullable `@Serializable` DTO field on `StarkPreferences`
+  (`data/local/datastore`), a growing list becomes a Room entity + `SessionDao`-style DAO. Route
+  reads/writes through `BikeRepository`/`LocalDataSource` — don't touch DataStore or DAOs directly
+  from feature code or the ViewModel.
 - Never add Retrofit/OkHttp or real network calls. Extend `NetworkDataSourceImpl` /
   `BikeTelemetryDataSourceImpl` with more mocked data instead.
 

@@ -15,7 +15,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-class BikeTelemetryDataSourceImplTest {
+class FakeBikeTelemetryDataSourceImplTest {
 
     private val templateJson = """
         {
@@ -31,13 +31,13 @@ class BikeTelemetryDataSourceImplTest {
 
     private val context: Context = mockk()
     private val assetManager: AssetManager = mockk()
-    private lateinit var dataSource: BikeTelemetryDataSourceImpl
+    private lateinit var dataSource: FakeBikeTelemetryDataSourceImpl
 
     @Before
     fun setUp() {
         every { context.assets } returns assetManager
         every { assetManager.open(any()) } answers { ByteArrayInputStream(templateJson.toByteArray()) }
-        dataSource = BikeTelemetryDataSourceImpl(context, Json { ignoreUnknownKeys = true })
+        dataSource = FakeBikeTelemetryDataSourceImpl(context, Json { ignoreUnknownKeys = true })
     }
 
     @Test

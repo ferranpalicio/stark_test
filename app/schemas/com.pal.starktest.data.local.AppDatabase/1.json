@@ -1,163 +1,9 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 1,
-    "identityHash": "114e6f29fc1602fcd6707b32d9f389fa",
+    "version": 2,
+    "identityHash": "0a17a1b2d335543fe634fb94f3aa8c68",
     "entities": [
-      {
-        "tableName": "user",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `email` TEXT NOT NULL, `name` TEXT NOT NULL, `phone` TEXT, `country` TEXT, PRIMARY KEY(`id`))",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "email",
-            "columnName": "email",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "name",
-            "columnName": "name",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "phone",
-            "columnName": "phone",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "country",
-            "columnName": "country",
-            "affinity": "TEXT"
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        }
-      },
-      {
-        "tableName": "bike",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `model` TEXT NOT NULL, `variant` TEXT NOT NULL, `firmwareVersion` TEXT NOT NULL, `imageUrl` TEXT NOT NULL, PRIMARY KEY(`id`))",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "model",
-            "columnName": "model",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "variant",
-            "columnName": "variant",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "firmwareVersion",
-            "columnName": "firmwareVersion",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "imageUrl",
-            "columnName": "imageUrl",
-            "affinity": "TEXT",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        }
-      },
-      {
-        "tableName": "battery_summary",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `stateOfChargePct` INTEGER NOT NULL, `estimatedRangeKm` INTEGER NOT NULL, PRIMARY KEY(`id`))",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "stateOfChargePct",
-            "columnName": "stateOfChargePct",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "estimatedRangeKm",
-            "columnName": "estimatedRangeKm",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        }
-      },
-      {
-        "tableName": "ride_settings",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `powerMap` TEXT NOT NULL, `maxPowerHp` REAL NOT NULL, `engineBrakingPct` INTEGER NOT NULL, `regenPct` INTEGER NOT NULL, PRIMARY KEY(`id`))",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "powerMap",
-            "columnName": "powerMap",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "maxPowerHp",
-            "columnName": "maxPowerHp",
-            "affinity": "REAL",
-            "notNull": true
-          },
-          {
-            "fieldPath": "engineBrakingPct",
-            "columnName": "engineBrakingPct",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "regenPct",
-            "columnName": "regenPct",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        }
-      },
       {
         "tableName": "session",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `durationS` INTEGER NOT NULL, `distanceKm` REAL NOT NULL, `maxSpeedKmh` REAL NOT NULL)",
@@ -193,41 +39,11 @@
             "id"
           ]
         }
-      },
-      {
-        "tableName": "diagnostics",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `faultCodesJson` TEXT NOT NULL, `warningsJson` TEXT NOT NULL, PRIMARY KEY(`id`))",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "faultCodesJson",
-            "columnName": "faultCodesJson",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "warningsJson",
-            "columnName": "warningsJson",
-            "affinity": "TEXT",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "id"
-          ]
-        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '114e6f29fc1602fcd6707b32d9f389fa')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0a17a1b2d335543fe634fb94f3aa8c68')"
     ]
   }
 }

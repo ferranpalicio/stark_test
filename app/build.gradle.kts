@@ -76,10 +76,13 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 
-    // Room
+    // Room (session history only — everything single-valued lives in DataStore)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // DataStore
+    implementation(libs.androidx.datastore)
 
     // Kotlinx
     implementation(libs.kotlinx.serialization.json)

@@ -18,9 +18,11 @@ riding-simulation toggle, built as a single-`Activity` Compose app.
   preference: it keeps state in one place and makes every screen trivially testable/previewable
   without DI.
 - **Koin** for DI (`di/DataModule.kt`, `di/AppModule.kt`), bootstrapped from `StarkTestApp`.
-- **Room** for persistence. Bike-related tables (`bike`, `battery_summary`, `ride_settings`,
-  `user`, `diagnostics`) are single-row (`id = 0`, `REPLACE` conflict strategy) since the app only
-  ever tracks one bike and one rider; `session` is the one multi-row table, one row per ride.
+- **DataStore for single-valued state, Room for lists.** The app only ever tracks one bike and one
+  rider, so `user`, `bike`, `batterySummary`, `rideSettings` and `diagnostics` live in a typed
+  `DataStore<StarkPreferences>` (JSON via kotlinx-serialization) rather than in single-row tables —
+  "zero or one value" is what a nullable field expresses natively, with no schema or migration.
+  Room keeps the one genuinely multi-row dataset: `session`, one row per ride.
 - **No networking library.** Retrofit/OkHttp are deliberately absent — `NetworkDataSourceImpl`
   returns a hardcoded `User` after a simulated delay, and `BikeTelemetryDataSourceImpl` derives
   incrementally-changing telemetry from a bundled `assets/bike_telemetry.json` template, emitting
@@ -41,8 +43,11 @@ riding-simulation toggle, built as a single-`Activity` Compose app.
 - A single root ViewModel means `AppUiState` aggregates unrelated concerns (user, bike overview,
   live telemetry, riding toggle) in one object. Fine at this app's size; would need splitting
   (e.g. per-feature state slices combined at the root) if the app grew much further.
-- Diagnostics fault codes/warnings are stored as JSON text columns in Room rather than normalized
-  into their own tables — simpler for this app's scale, at the cost of not being queryable in SQL.
+- Diagnostics fault codes/warnings are nested lists inside the DataStore JSON rather than
+  normalized tables — simpler for this app's scale, at the cost of not being queryable in SQL.
+- Splitting storage across two mechanisms is a judgement call: DataStore reads the whole file per
+  access, which is right for a handful of small values and wrong for session history, so each
+  dataset went where it fits. The cost is two things to reason about instead of one.
 
 ## Testing
 

@@ -15,7 +15,10 @@ Use for writing or fixing unit tests under `app/src/test`. UI/instrumented tests
 - Turbine (`.test { awaitItem() ... }`) for asserting on `Flow`s, especially
   `BikeRepositoryImpl.observeLiveTelemetry` and `BikeTelemetryDataSourceImpl.observeTelemetry`.
 - Data source tests mock DAOs/`Context`/`AssetManager` directly rather than spinning up an
-  in-memory Room database or Robolectric — keeps tests fast and dependency-light.
+  in-memory Room database or Robolectric — keeps tests fast and dependency-light. DataStore is the
+  exception: use a real `DataStoreFactory.create` over a JUnit `TemporaryFolder` (see
+  `LocalDataSourceImplTest`) — the JSON round trip is the behaviour under test, and it runs on the
+  plain JVM.
 - Plain JUnit `Assert` methods (`assertEquals`, `assertTrue`) — no Truth/AssertJ dependency is
   declared, don't add one for a single test file.
 

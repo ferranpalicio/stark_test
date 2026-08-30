@@ -8,9 +8,12 @@ import com.pal.starktest.domain.model.Session
 import com.pal.starktest.domain.model.User
 
 /**
- * Local persistence (Room). Queries and stores user data and the bike-related data described in
- * the assessment: bike (single row), battery summary (single row), ride settings (single row),
- * session history (one row per session), and diagnostics.
+ * Local persistence. Stores the user and the bike-related data described in the assessment:
+ * bike, battery summary, ride settings, diagnostics — each a single value backed by DataStore —
+ * plus session history, a list backed by Room.
+ *
+ * A `null` getter result means "never saved", which callers treat as a cue to fall back to
+ * network or telemetry defaults.
  */
 interface LocalDataSource {
     suspend fun getUser(): User?
