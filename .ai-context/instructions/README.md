@@ -18,6 +18,11 @@ changes; it captures decisions that aren't obvious from the code alone.
   landscape via `currentWindowAdaptiveInfo().windowSizeClass.windowHeightSizeClass`. No
   multi-pane/list-detail scenes are implemented (out of scope for a compact-only app).
 - Koin DI (`di/DataModule.kt`, `di/AppModule.kt`), wired up in `StarkTestApp.onCreate`.
+- Typography is Epilogue (`ui/theme/Type.kt`), shipped as two *variable* fonts in `res/font`
+  (`epilogue_variable.ttf`, `epilogue_variable_italic.ttf`). Each `FontFamily` entry reuses those
+  two files and pins the `wght` axis with `FontVariation.Settings` — don't add a `.ttf` per weight.
+  `Typography` remaps every M3 style, so new styles stay on-brand automatically. Resource file
+  names must be lowercase/underscore, hence the rename from the vendor's `Epilogue-VariableFont_wght.ttf`.
 - Persistence is split by cardinality (`data/local`). Single-valued state — user, bike, battery
   summary, ride settings, diagnostics — lives in a typed
   `DataStore<StarkPreferences>` (`data/local/datastore`, JSON via kotlinx-serialization); a `null`

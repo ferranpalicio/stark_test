@@ -12,6 +12,7 @@ import com.pal.starktest.domain.model.Session
 import com.pal.starktest.domain.model.Warning
 import com.pal.starktest.domain.model.WarningSeverity
 import java.time.Instant
+import kotlin.math.round
 
 fun BikeDto.toDomain(): Bike = Bike(
     model = model,
@@ -61,7 +62,7 @@ fun BikeTelemetryDto.toDomain(currentSpeedKmh: Double = 0.0): BikeTelemetry = Bi
     rideSettings = rideSettings.toDomain(),
     session = session.toDomain(),
     diagnostics = diagnostics.toDomain(),
-    currentSpeedKmh = currentSpeedKmh,
+    currentSpeedKmh = currentSpeedKmh.roundToTwoDecimals(),
 )
 
 private fun String.toChargingState(): ChargingState =
@@ -74,3 +75,5 @@ private fun String.toPowerMap(): PowerMap =
 private fun String.toWarningSeverity(): WarningSeverity =
     WarningSeverity.entries.firstOrNull { it.name.equals(this, ignoreCase = true) }
         ?: WarningSeverity.INFO
+
+private fun Double.roundToTwoDecimals(): Double = round(this * 100.0) / 100.0

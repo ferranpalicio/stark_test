@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">StarkTest</string>
+    <string name="temperature">%s °C</string>
+    <string name="kmh">km/h</string>
+    <string name="power_ratio">%s hp/\n%s max</string>
+    <string name="power_map">Power map:</string>
+    <string name="warnings">Warnings</string>
 </resources>
