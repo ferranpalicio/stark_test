@@ -15,15 +15,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val ASSET_FILE_NAME = "bike_telemetry.json"
-private const val TICK_INTERVAL_MS = 60_000L
+
+/**
+ * One value drives both the wall-clock delay and the simulated elapsed time, so the session totals
+ * stay consistent with how long the ride has actually been running.
+ */
+private const val TICK_INTERVAL_S = 15L
 
 /**
  * Simulates the bike's live telemetry connection. The static [ASSET_FILE_NAME] snapshot is used
  * as a template; each tick derives mock, incrementally-changing values from it rather than
- * emitting a frozen copy, so the "Bike live" screen visibly updates every minute.
+ * emitting a frozen copy, so the "Bike live" screen visibly updates every
+ * [TICK_INTERVAL_S] seconds.
  */
 class FakeBikeTelemetryDataSourceImpl(
     private val context: Context,
@@ -32,13 +38,10 @@ class FakeBikeTelemetryDataSourceImpl(
 
     private var cachedTemplate: BikeTelemetryDto? = null
 
-    override fun observeTelemetry(
-        initialTimestamp: Instant?,
-        initialSession: Session?,
-    ): Flow<BikeTelemetry> = flow {
+    override fun observeTelemetry(): Flow<BikeTelemetry> = flow {
         val template = loadTemplate()
-        var timestamp = initialTimestamp ?: Instant.now()
-        var session = initialSession ?: Session(durationS = 0, distanceKm = 0.0, maxSpeedKmh = 0.0)
+        var timestamp = Instant.now()
+        var session = Session(durationS = 0, distanceKm = 0.0, maxSpeedKmh = 0.0)
         var tick = 0
 
         while (true) {
@@ -57,12 +60,12 @@ class FakeBikeTelemetryDataSourceImpl(
 
             emit(telemetry)
 
-            delay(TICK_INTERVAL_MS.milliseconds)
+            delay(TICK_INTERVAL_S.seconds)
             tick += 1
-            timestamp = timestamp.plusSeconds(60)
+            timestamp = timestamp.plusSeconds(TICK_INTERVAL_S)
             session = session.copy(
-                durationS = session.durationS + 60,
-                distanceKm = session.distanceKm + (speed * 60 / 3600),
+                durationS = session.durationS + TICK_INTERVAL_S,
+                distanceKm = session.distanceKm + (speed * TICK_INTERVAL_S / 3600),
                 maxSpeedKmh = max(session.maxSpeedKmh, speed),
             )
         }

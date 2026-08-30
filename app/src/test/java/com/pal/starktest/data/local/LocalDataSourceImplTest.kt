@@ -203,11 +203,12 @@ class LocalDataSourceImplTest {
 
     @Test
     fun `saveSession returns row id from dao`() = runTest {
-        coEvery { sessionDao.upsertSession(any()) } returns 7L
+        coEvery { sessionDao.insertSession(any()) } returns 7L
 
         val id = dataSource.saveSession(Session(id = 0, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0))
 
         assertEquals(7L, id)
-        coVerify { sessionDao.upsertSession(SessionEntity(id = 0, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0)) }
+        coVerify { sessionDao.insertSession(SessionEntity(id = 0, durationS = 60, distanceKm = 1.0, maxSpeedKmh = 30.0)) }
     }
+
 }

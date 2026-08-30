@@ -109,24 +109,41 @@ class BikeRepositoryImplTest {
     }
 
     @Test
-    fun `observeLiveTelemetry persists each snapshot and assigns the saved session id`() = runTest {
-        coEvery { local.getLastSession() } returns null
-        val emitted = snapshot(Session(durationS = 60, distanceKm = 1.0, maxSpeedKmh = 40.0))
-        coEvery { telemetry.observeTelemetry(any(), any()) } returns flowOf(emitted)
+    fun `observeLiveTelemetry persists each snapshot without writing session history`() = runTest {
+        val session = Session(durationS = 60, distanceKm = 1.0, maxSpeedKmh = 40.0)
+        coEvery { telemetry.observeTelemetry() } returns flowOf(snapshot(session))
         coEvery { local.saveBike(any()) } returns Unit
         coEvery { local.saveBatterySummary(any()) } returns Unit
         coEvery { local.saveRideSettings(any()) } returns Unit
-        coEvery { local.saveSession(any()) } returns 42L
         coEvery { local.saveDiagnostics(any()) } returns Unit
 
         repository.observeLiveTelemetry().test {
-            val result = awaitItem()
-            assertEquals(42L, result.session.id)
+            assertEquals(session, awaitItem().session)
             awaitComplete()
         }
 
         coVerify { local.saveBike(bike) }
         coVerify { local.saveBatterySummary(BatterySummary(90, 50)) }
-        coVerify { local.saveSession(match { it.id == 0L && it.durationS == 60L }) }
+        // A ride in progress must not touch storage until it ends.
+        coVerify(exactly = 0) { local.saveSession(any()) }
+    }
+
+    @Test
+    fun `saveSession appends the finished ride as a new row`() = runTest {
+        val finished = Session(id = 9, durationS = 120, distanceKm = 2.0, maxSpeedKmh = 55.0)
+        coEvery { local.saveSession(any()) } returns 7L
+
+        repository.saveSession(finished)
+
+        // id is reset so Room autogenerates instead of overwriting row 9.
+        coVerify { local.saveSession(finished.copy(id = 0)) }
+    }
+
+    @Test
+    fun `getSessions delegates to local storage`() = runTest {
+        val sessions = listOf(Session(id = 2, durationS = 120, distanceKm = 2.0, maxSpeedKmh = 40.0))
+        coEvery { local.getSessions() } returns sessions
+
+        assertEquals(sessions, repository.getSessions())
     }
 }

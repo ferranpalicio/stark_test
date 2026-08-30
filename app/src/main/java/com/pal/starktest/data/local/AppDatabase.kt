@@ -13,7 +13,7 @@ import com.pal.starktest.data.local.entity.SessionEntity
  */
 @Database(
     entities = [SessionEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

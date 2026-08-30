@@ -9,7 +9,7 @@ import com.pal.starktest.domain.model.User
 
 /**
  * Local persistence. Stores the user and the bike-related data described in the assessment:
- * bike, battery summary, ride settings, diagnostics — each a single value backed by DataStore —
+ * bike, battery summary, ride settings and diagnostics — each a single value backed by DataStore —
  * plus session history, a list backed by Room.
  *
  * A `null` getter result means "never saved", which callers treat as a cue to fall back to
@@ -31,7 +31,7 @@ interface LocalDataSource {
     suspend fun getSessions(): List<Session>
     suspend fun getLastSession(): Session?
 
-    /** Upserts the session and returns its row id (stable across ticks of the same ride). */
+    /** Inserts the session as a new history row and returns its generated id. */
     suspend fun saveSession(session: Session): Long
 
     suspend fun getDiagnostics(): Diagnostics?

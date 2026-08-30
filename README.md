@@ -13,7 +13,7 @@ riding-simulation toggle, built as a single-`Activity` Compose app.
 - **Navigation 3** (`androidx.navigation3`) drives the four top-level destinations
   (`AppDestination`), backed by a simple in-memory `NavBackStack`.
 - **MVVM with exactly one root ViewModel.** `AppViewModel` is injected once, in `StarkApp` (the nav
-  root). Every feature screen (`features/bikelive`, `bikedata`, `userdata`, `settings`) is a
+  root). Every feature screen (`features/bikelive`, `bikedata`, `sessions`, `userdata`, `settings`) is a
   stateless composable — plain data in, lambda callbacks out. This was a hard requirement, not a
   preference: it keeps state in one place and makes every screen trivially testable/previewable
   without DI.
@@ -22,12 +22,17 @@ riding-simulation toggle, built as a single-`Activity` Compose app.
   rider, so `user`, `bike`, `batterySummary`, `rideSettings` and `diagnostics` live in a typed
   `DataStore<StarkPreferences>` (JSON via kotlinx-serialization) rather than in single-row tables —
   "zero or one value" is what a nullable field expresses natively, with no schema or migration.
-  Room keeps the one genuinely multi-row dataset: `session`, one row per ride.
+  Room keeps the one genuinely multi-row dataset: `session`, one row per *completed* ride.
+- **A ride in progress is single-valued too.** Its running totals are rewritten to
+  `StarkPreferences.activeSession` on every telemetry tick and only become a `session` row when the
+  ride ends, so a process death costs at most one tick and never leaves a half-written row in the
+  history list. Backgrounding the app ends the ride (`ON_STOP` → `AppViewModel.onAppStopped()`); a
+  kill that skips `ON_STOP` is recovered by committing the leftover active session at next launch.
 - **No networking library.** Retrofit/OkHttp are deliberately absent — `NetworkDataSourceImpl`
   returns a hardcoded `User` after a simulated delay, and `BikeTelemetryDataSourceImpl` derives
   incrementally-changing telemetry from a bundled `assets/bike_telemetry.json` template, emitting
-  one snapshot every 60 seconds via `Flow`. It accepts nullable `initialTimestamp`/`initialSession`
-  so the repository can tell a fresh connection from a resumed ride.
+  one snapshot every 15 seconds via `Flow`. Every ride starts from zero — since backgrounding ends
+  the ride, there is nothing to resume.
 - **Kotlin explicit backing fields** (`AppViewModel.uiState`) instead of the usual
   `_uiState`/`uiState` pair. This is an unstable, opt-in language feature
   (`-XXLanguage:+ExplicitBackingFields`) — it was mandated for this assessment, but be aware it

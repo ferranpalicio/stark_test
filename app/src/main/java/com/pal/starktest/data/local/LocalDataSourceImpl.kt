@@ -62,7 +62,7 @@ class LocalDataSourceImpl(
 
     override suspend fun getLastSession(): Session? = sessionDao.getLastSession()?.toDomain()
 
-    override suspend fun saveSession(session: Session): Long = sessionDao.upsertSession(
+    override suspend fun saveSession(session: Session): Long = sessionDao.insertSession(
         SessionEntity(
             id = session.id,
             durationS = session.durationS,

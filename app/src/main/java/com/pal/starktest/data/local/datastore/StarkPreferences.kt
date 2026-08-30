@@ -16,8 +16,9 @@ import kotlinx.serialization.Serializable
  * DataStore models "zero or one value" natively (a `null` field is simply "never saved") and needs
  * no schema or migration.
  *
- * Ride *sessions* stay in Room — they are a growing, queryable list, which is what a database is
- * for. See [com.pal.starktest.data.local.dao.SessionDao].
+ * Ride sessions stay in Room — they are a growing, queryable list, which is what a database is for.
+ * See [com.pal.starktest.data.local.dao.SessionDao]. The ride *in progress* is not persisted at all:
+ * it lives in the telemetry flow while it runs and is written once, when it ends.
  *
  * These are persistence DTOs, deliberately separate from the domain models: enums are stored as
  * lowercase strings so an unrecognised value read back from disk degrades to a default instead of

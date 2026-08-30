@@ -6,6 +6,8 @@ import app.cash.turbine.test
 import io.mockk.every
 import io.mockk.mockk
 import java.io.ByteArrayInputStream
+import java.time.Duration
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -15,6 +17,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/** Mirrors the production `TICK_INTERVAL_S`, which is private to the data source. */
+private const val TICK_INTERVAL_S = 15L
+
+@OptIn(ExperimentalCoroutinesApi::class)
 class FakeBikeTelemetryDataSourceImplTest {
 
     private val templateJson = """
@@ -49,32 +55,43 @@ class FakeBikeTelemetryDataSourceImplTest {
     }
 
     @Test
-    fun `observeTelemetry starts a fresh session from zero when none provided`() = runTest {
-        dataSource.observeTelemetry(initialTimestamp = null, initialSession = null).test {
+    fun `observeTelemetry always starts a fresh session from zero`() = runTest {
+        dataSource.observeTelemetry().test {
             val first = awaitItem()
             assertEquals(0L, first.session.durationS)
+            assertEquals(0.0, first.session.distanceKm, 0.0)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `observeTelemetry resumes from provided session totals`() = runTest {
-        val resumed = com.pal.starktest.domain.model.Session(durationS = 300, distanceKm = 5.0, maxSpeedKmh = 70.0)
-
-        dataSource.observeTelemetry(initialTimestamp = null, initialSession = resumed).test {
-            val first = awaitItem()
-            assertEquals(300L, first.session.durationS)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `observeTelemetry increments duration and timestamp on each tick`() = runTest {
+    fun `observeTelemetry increments duration and timestamp by one tick interval`() = runTest {
         val results = dataSource.observeTelemetry().take(2).toList()
 
         assertEquals(2, results.size)
-        assertTrue(results[1].session.durationS > results[0].session.durationS)
-        assertTrue(results[1].timestamp.isAfter(results[0].timestamp))
+        // Simulated elapsed time must track the wall-clock delay, or the session totals drift.
+        assertEquals(TICK_INTERVAL_S, results[1].session.durationS - results[0].session.durationS)
+        assertEquals(
+            TICK_INTERVAL_S,
+            Duration.between(results[0].timestamp, results[1].timestamp).seconds,
+        )
+    }
+
+    @Test
+    fun `observeTelemetry emits one snapshot per tick interval`() = runTest {
+        val start = testScheduler.currentTime
+
+        dataSource.observeTelemetry().take(2).toList()
+
+        assertEquals(TICK_INTERVAL_S * 1_000, testScheduler.currentTime - start)
+    }
+
+    @Test
+    fun `observeTelemetry accumulates distance from speed over the tick interval`() = runTest {
+        val results = dataSource.observeTelemetry().take(2).toList()
+
+        val expected = results[0].currentSpeedKmh * TICK_INTERVAL_S / 3600
+        assertEquals(expected, results[1].session.distanceKm, 1e-9)
     }
 
     @Test
