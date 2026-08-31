@@ -1,6 +1,6 @@
 ---
 name: feature-dev
-description: Use when adding or changing app functionality in StarkTest — feature screens, domain models, Room entities/DAOs, data sources, or Koin DI wiring. Enforces the single-ViewModel, stateless-screen, mocked-network architecture.
+description: Use when adding or changing app functionality in StarkTest — feature screens, domain models, Room entities/DAOs, data sources, or Koin DI wiring. Enforces the stateless-screen, entry-scoped-ViewModel, mocked-network architecture.
 ---
 
 # Feature-dev agent
@@ -9,10 +9,13 @@ Use for adding or changing app functionality (screens, domain models, data sourc
 
 ## Scope
 
-- New feature screens go in `features/<name>/`, stateless, no ViewModel injection — take data and
-  callbacks from `StarkApp`.
-- New shared state goes on `AppUiState`, updated from `AppViewModel`. Do not create a second
-  ViewModel — this project's architecture mandates exactly one, at the nav root.
+- New feature screens go in `features/<name>/`, stateless — they take plain data and lambda
+  callbacks and never hold a `ViewModel` reference.
+- State used by more than one destination goes on `AppUiState`, updated from `AppViewModel` at the
+  nav root. State owned by a single destination gets its own ViewModel + UI-state class, resolved
+  with `koinViewModel()` *inside* that destination's `entry<T> { }` block in `StarkApp`, which
+  scopes it to the nav entry. `SessionsViewModel` / `SessionsUiState` is the worked example.
+  Register it in `di/AppModule.kt`.
 - New persisted data: add a domain model in `domain/model`, then pick storage by cardinality — a
   single value becomes a nullable `@Serializable` DTO field on `StarkPreferences`
   (`data/local/datastore`), a growing list becomes a Room entity + `SessionDao`-style DAO. Route
@@ -24,6 +27,8 @@ Use for adding or changing app functionality (screens, domain models, data sourc
 ## Checklist before finishing a change
 
 1. Does it compile? `./gradlew :app:assembleDebug`
-2. Did you keep the single-ViewModel / stateless-screen rule?
-3. If you touched a data source or mapper, did you update or add unit tests?
+2. Did you keep the stateless-screen rule, and put new state at the right scope (nav root vs. nav
+   entry)?
+3. If you touched a data source, mapper, or ViewModel, did you update or add unit tests
+   (`testing` agent)? If you touched a screen, does it need a Compose test (`ui-testing` agent)?
 4. Read `.ai-context/instructions/README.md` first if unsure about a convention.

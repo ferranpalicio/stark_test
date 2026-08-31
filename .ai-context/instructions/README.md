@@ -76,14 +76,40 @@ changes; it captures decisions that aren't obvious from the code alone.
 
 ## Testing
 
-- Unit tests only (`app/src/test`) — no instrumented/UI tests are in scope for this assessment.
+Two source sets, two conventions. See `.ai-context/agents/testing.md` (JVM) and
+`.ai-context/agents/ui-testing.md` (Compose) for the full rules.
+
+### JVM unit tests — `app/src/test`
+
 - Data sources are tested against mocked DAOs/Context (MockK), not an in-memory Room DB. The
   exception is DataStore: `LocalDataSourceImplTest` builds a real file-backed
   `DataStoreFactory.create` over a `TemporaryFolder`, since the JSON round trip is the behaviour
   worth covering and DataStore needs nothing but a writable file on the JVM.
-- `AppViewModel` tests use `StandardTestDispatcher` + `Dispatchers.setMain`; advance the scheduler
-  with `advanceUntilIdle()` after triggering a suspend call.
+- ViewModel tests (`AppViewModelTest`, `SessionsViewModelTest`) use `StandardTestDispatcher` +
+  `Dispatchers.setMain`; advance the scheduler with `advanceUntilIdle()` after triggering a
+  suspend call.
+
+### Compose UI tests — `app/src/androidTest`
+
+- Instrumented, on a device/emulator. No Robolectric — don't add it, and don't move UI tests into
+  `app/src/test`.
+- Rule is `createAndroidComposeRule<ComponentActivity>()`, not `<MainActivity>`. Screens are
+  stateless, so a test calls the composable directly and never boots Koin or a ViewModel.
+- Test data is the feature's `@Preview` fixture (`features/<name>/previews.kt`), `.copy()`-ed for
+  variants — previews and tests describe the same screen. Expected strings come from
+  `rule.activity.getString(...)`, never a hardcoded literal.
+- No `testTag`s in production composables; find nodes by text, content description, or semantics
+  matcher. Assert layout with `getUnclippedBoundsInRoot()` comparisons, not fixed dp, and force the
+  viewport with `DeviceConfigurationOverride(...ForcedSize(...))` so landscape branches run on a
+  portrait emulator.
+- `BikeLiveScreenTest` is the worked example.
 
 ## Before committing
 
-Run `./gradlew :app:assembleDebug` and `./gradlew :app:testDebugUnitTest` — both must be green.
+Run all three — each must be green:
+
+```
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+./gradlew :app:connectedDebugAndroidTest   # needs `adb devices` to show one
+```

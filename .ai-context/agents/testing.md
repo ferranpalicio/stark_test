@@ -1,11 +1,12 @@
 ---
 name: testing
-description: Use when writing or fixing unit tests under app/src/test — mappers, data sources, repository, AppViewModel. Knows the MockK + kotlinx-coroutines-test + Turbine conventions this repo uses. UI/instrumented tests are out of scope.
+description: Use when writing or fixing JVM unit tests under app/src/test — mappers, data sources, repository, ViewModels. Knows the MockK + kotlinx-coroutines-test + Turbine conventions this repo uses. Compose UI tests are the `ui-testing` agent's job.
 ---
 
 # Testing agent
 
-Use for writing or fixing unit tests under `app/src/test`. UI/instrumented tests are out of scope.
+Use for writing or fixing JVM unit tests under `app/src/test`. For Compose UI tests under
+`app/src/androidTest` use the `ui-testing` agent instead.
 
 ## Conventions used in this repo
 
@@ -28,7 +29,9 @@ Use for writing or fixing unit tests under `app/src/test`. UI/instrumented tests
   branch.
 - Every `BikeRepository`/`LocalDataSource`/`NetworkDataSource` method — cache-hit and cache-miss
   paths where relevant.
-- Every public `AppViewModel` function — resulting `AppUiState` after `advanceUntilIdle()`.
+- Every public ViewModel function — the resulting UI-state object after `advanceUntilIdle()`.
+  `AppViewModel` owns cross-cutting state; per-destination ViewModels (e.g. `SessionsViewModel`)
+  get their own test class next to the feature package.
 
 ## Running
 
