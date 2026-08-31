@@ -1,6 +1,6 @@
 package com.pal.starktest.features.app
 
-    import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
@@ -67,7 +67,12 @@ fun StarkApp(viewModel: AppViewModel = koinViewModel()) {
                         NavigationBarItem(
                             selected = destination == current,
                             onClick = { navigateTo(destination) },
-                            icon = { Icon(destination.icon, contentDescription = destination.label) },
+                            icon = {
+                                Icon(
+                                    destination.icon,
+                                    contentDescription = destination.label
+                                )
+                            },
                             label = { Text(destination.label) },
                         )
                     }
@@ -85,7 +90,12 @@ fun StarkApp(viewModel: AppViewModel = koinViewModel()) {
                         NavigationRailItem(
                             selected = destination == current,
                             onClick = { navigateTo(destination) },
-                            icon = { Icon(destination.icon, contentDescription = destination.label) },
+                            icon = {
+                                Icon(
+                                    destination.icon,
+                                    contentDescription = destination.label
+                                )
+                            },
                             label = { Text(destination.label) },
                         )
                     }
@@ -96,7 +106,11 @@ fun StarkApp(viewModel: AppViewModel = koinViewModel()) {
                 backStack = backStack,
                 entryProvider = entryProvider {
                     entry<AppDestination.BikeLive> {
-                        BikeLiveScreen(isRiding = uiState.isRiding, telemetry = uiState.liveTelemetry)
+                        BikeLiveScreen(
+                            isRiding = uiState.isRiding,
+                            isLandscape = isLandscape,
+                            telemetry = uiState.liveTelemetry
+                        )
                     }
                     entry<AppDestination.BikeData> {
                         BikeDataScreen(overview = uiState.bikeOverview)
@@ -108,7 +122,10 @@ fun StarkApp(viewModel: AppViewModel = koinViewModel()) {
                         UserDataScreen(user = uiState.user)
                     }
                     entry<AppDestination.Settings> {
-                        SettingsScreen(isRiding = uiState.isRiding, onRidingChanged = viewModel::setRiding)
+                        SettingsScreen(
+                            isRiding = uiState.isRiding,
+                            onRidingChanged = viewModel::setRiding
+                        )
                     }
                 },
             )
