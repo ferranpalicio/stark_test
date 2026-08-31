@@ -3,6 +3,7 @@ package com.pal.starktest.data.local.datastore
 import com.pal.starktest.domain.model.BatterySummary
 import com.pal.starktest.domain.model.Bike
 import com.pal.starktest.domain.model.Diagnostics
+import com.pal.starktest.domain.model.FaultCode
 import com.pal.starktest.domain.model.PowerMap
 import com.pal.starktest.domain.model.RideSettings
 import com.pal.starktest.domain.model.User
@@ -122,7 +123,7 @@ data class RideSettingsPrefs(
 
 @Serializable
 data class DiagnosticsPrefs(
-    val faultCodes: List<String>,
+    val faultCodes: List<FaultCode>,
     val warnings: List<WarningPrefs>,
 ) {
     fun toDomain() = Diagnostics(

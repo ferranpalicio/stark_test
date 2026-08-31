@@ -1,6 +1,7 @@
 package com.pal.starktest.data.telemetry.dto
 
 import com.pal.starktest.domain.model.ChargingState
+import com.pal.starktest.domain.model.FaultCode
 import com.pal.starktest.domain.model.PowerMap
 import com.pal.starktest.domain.model.WarningSeverity
 import org.junit.Assert.assertEquals
@@ -31,7 +32,7 @@ class TelemetryMappersTest {
     private val sessionDto = SessionDto(durationS = 3742, distanceKm = 24.7, maxSpeedKmh = 94.1)
     private val warningDto =
         WarningDto(code = "W_MOT_TEMP_HIGH", message = "Motor temperature elevated", severity = "warning")
-    private val diagnosticsDto = DiagnosticsDto(faultCodes = emptyList(), warnings = listOf(warningDto))
+    private val diagnosticsDto = DiagnosticsDto(faultCodes = listOf("MOTOR_OVERHEAT"), warnings = listOf(warningDto))
     private val telemetryDto = BikeTelemetryDto(
         bike = bikeDto,
         timestamp = "2025-05-19T10:32:45Z",
@@ -84,9 +85,15 @@ class TelemetryMappersTest {
     @Test
     fun `DiagnosticsDto maps warnings list`() {
         val domain = diagnosticsDto.toDomain()
-        assertTrue(domain.faultCodes.isEmpty())
         assertEquals(1, domain.warnings.size)
         assertEquals("W_MOT_TEMP_HIGH", domain.warnings.first().code)
+    }
+
+    @Test
+    fun `DiagnosticsDto maps fault codes list`() {
+        val domain = diagnosticsDto.toDomain()
+        assertEquals(1, domain.faultCodes.size)
+        assertEquals("MOTOR_OVERHEAT", domain.faultCodes.first().name)
     }
 
     @Test

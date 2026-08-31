@@ -6,6 +6,12 @@ enum class WarningSeverity {
     CRITICAL,
 }
 
+enum class FaultCode {
+    MOTOR_OVERHEAT,
+    SENSOR_FAILURE,
+    UNKNOWN
+}
+
 data class Warning(
     val code: String,
     val message: String,
@@ -13,6 +19,6 @@ data class Warning(
 )
 
 data class Diagnostics(
-    val faultCodes: List<String>,
+    val faultCodes: List<FaultCode>,
     val warnings: List<Warning>,
 )

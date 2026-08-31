@@ -5,6 +5,7 @@ import com.pal.starktest.domain.model.Bike
 import com.pal.starktest.domain.model.BikeTelemetry
 import com.pal.starktest.domain.model.ChargingState
 import com.pal.starktest.domain.model.Diagnostics
+import com.pal.starktest.domain.model.FaultCode
 import com.pal.starktest.domain.model.Motor
 import com.pal.starktest.domain.model.PowerMap
 import com.pal.starktest.domain.model.RideSettings
@@ -50,7 +51,7 @@ fun WarningDto.toDomain(): Warning = Warning(
 )
 
 fun DiagnosticsDto.toDomain(): Diagnostics = Diagnostics(
-    faultCodes = faultCodes,
+    faultCodes = faultCodes.map { it.toFaultCode() },
     warnings = warnings.map { it.toDomain() },
 )
 
@@ -75,5 +76,9 @@ private fun String.toPowerMap(): PowerMap =
 private fun String.toWarningSeverity(): WarningSeverity =
     WarningSeverity.entries.firstOrNull { it.name.equals(this, ignoreCase = true) }
         ?: WarningSeverity.INFO
+
+private fun String.toFaultCode(): FaultCode =
+    FaultCode.entries.firstOrNull { it.name.equals(this, ignoreCase = true) }
+        ?: FaultCode.UNKNOWN
 
 private fun Double.roundToTwoDecimals(): Double = round(this * 100.0) / 100.0

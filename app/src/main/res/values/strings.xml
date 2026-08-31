@@ -5,4 +5,7 @@
     <string name="power_ratio">%s hp/\n%s max</string>
     <string name="power_map">Power map:</string>
     <string name="warnings">Warnings</string>
+    <string name="motor_overheat_fault">Motor overheat. Please stop asap</string>
+    <string name="sensor_failure_fault">Sensor failure. Contact with you dealer</string>
+    <string name="unknown_failure_fault">Unknown failure</string>
 </resources>
