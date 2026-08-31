@@ -45,7 +45,6 @@ class AppViewModelTest {
         lastSession = null,
         diagnostics = Diagnostics(emptyList(), emptyList()),
     )
-    private val sessions = listOf(Session(id = 1, durationS = 120, distanceKm = 2.0, maxSpeedKmh = 50.0))
     private val telemetry = BikeTelemetry(
         bike = overview.bike,
         timestamp = java.time.Instant.parse("2025-01-01T00:00:00Z"),
@@ -70,22 +69,35 @@ class AppViewModelTest {
     private fun viewModel(): AppViewModel {
         coEvery { repository.getUser() } returns user
         coEvery { repository.getBikeOverview() } returns overview
-        coEvery { repository.getSessions() } returns sessions
         coEvery { repository.saveSession(any()) } returns Unit
         return AppViewModel(repository)
     }
 
     @Test
-    fun `init loads user, bike overview and sessions`() = runTest {
+    fun `init loads user and bike overview`() = runTest {
         val vm = viewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = vm.uiState.value
         assertEquals(UiState.Success(user), state.user)
         assertEquals(UiState.Success(overview), state.bikeOverview)
-        assertEquals(UiState.Success(sessions), state.sessions)
         assertEquals(UiState.Empty, state.liveTelemetry)
         assertTrue(!state.isRiding)
+    }
+
+    @Test
+    fun `session history is not read here - SessionsViewModel owns it`() = runTest {
+        val vm = viewModel()
+        dispatcher.scheduler.advanceUntilIdle()
+        coEvery { repository.observeLiveTelemetry() } returns flowOf(telemetry)
+
+        vm.setRiding(true)
+        dispatcher.scheduler.advanceUntilIdle()
+        vm.setRiding(false)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Not even after a ride: the Sessions nav entry re-reads on entry instead.
+        coVerify(exactly = 0) { repository.getSessions() }
     }
 
     @Test
@@ -102,7 +114,6 @@ class AppViewModelTest {
     fun `loadUser surfaces repository failure as error state`() = runTest {
         coEvery { repository.getUser() } throws IllegalStateException("boom")
         coEvery { repository.getBikeOverview() } returns overview
-        coEvery { repository.getSessions() } returns sessions
 
         val vm = AppViewModel(repository)
         dispatcher.scheduler.advanceUntilIdle()
@@ -124,21 +135,22 @@ class AppViewModelTest {
     }
 
     @Test
-    fun `setRiding false saves the last emitted session and refreshes history`() = runTest {
+    fun `setRiding false saves the last emitted session and refreshes the overview`() = runTest {
         val vm = viewModel()
         dispatcher.scheduler.advanceUntilIdle()
         coEvery { repository.observeLiveTelemetry() } returns flowOf(telemetry)
         vm.setRiding(true)
         dispatcher.scheduler.advanceUntilIdle()
-        val ended = sessions + Session(id = 2, durationS = 15, distanceKm = 0.2, maxSpeedKmh = 40.0)
-        coEvery { repository.getSessions() } returns ended
+        val refreshed = overview.copy(lastSession = telemetry.session)
+        coEvery { repository.getBikeOverview() } returns refreshed
 
         vm.setRiding(false)
         dispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(!vm.uiState.value.isRiding)
         assertEquals(UiState.Empty, vm.uiState.value.liveTelemetry)
-        assertEquals(UiState.Success(ended), vm.uiState.value.sessions)
+        // The overview carries lastSession, so it has to be re-read once the ride is written.
+        assertEquals(UiState.Success(refreshed), vm.uiState.value.bikeOverview)
         coVerify(exactly = 1) { repository.saveSession(telemetry.session) }
     }
 

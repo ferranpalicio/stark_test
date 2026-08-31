@@ -25,7 +25,7 @@ class AppViewModel(
 
     init {
         loadUser()
-        viewModelScope.launch { refreshHistory() }
+        loadBikeOverview()
     }
 
     fun setRiding(riding: Boolean) {
@@ -48,7 +48,7 @@ class AppViewModel(
             if (session != null && session.durationS > 0) {
                 runCatching { repository.saveSession(session) }
             }
-            refreshHistory()
+            loadBikeOverview()
         }
     }
 
@@ -61,24 +61,14 @@ class AppViewModel(
         }
     }
 
-    /** Both reads depend on the just-ended ride being saved, hence the shared call site. */
-    private suspend fun refreshHistory() {
-        loadSessions()
-        loadBikeOverview()
-    }
-
-    private suspend fun loadSessions() {
-        uiState.update { it.copy(sessions = UiState.Loading) }
-        runCatching { repository.getSessions() }
-            .onSuccess { sessions -> uiState.update { it.copy(sessions = UiState.Success(sessions)) } }
-            .onFailure { e -> uiState.update { it.copy(sessions = UiState.Error(e.message ?: "Unknown error")) } }
-    }
-
-    private suspend fun loadBikeOverview() {
-        uiState.update { it.copy(bikeOverview = UiState.Loading) }
-        runCatching { repository.getBikeOverview() }
-            .onSuccess { overview -> uiState.update { it.copy(bikeOverview = UiState.Success(overview)) } }
-            .onFailure { e -> uiState.update { it.copy(bikeOverview = UiState.Error(e.message ?: "Unknown error")) } }
+    /** The overview carries `lastSession`, so it has to be re-read once a ride is saved. */
+    private fun loadBikeOverview() {
+        viewModelScope.launch {
+            uiState.update { it.copy(bikeOverview = UiState.Loading) }
+            runCatching { repository.getBikeOverview() }
+                .onSuccess { overview -> uiState.update { it.copy(bikeOverview = UiState.Success(overview)) } }
+                .onFailure { e -> uiState.update { it.copy(bikeOverview = UiState.Error(e.message ?: "Unknown error")) } }
+        }
     }
 
     private fun startTelemetry() {

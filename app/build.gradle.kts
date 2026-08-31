@@ -68,6 +68,9 @@ dependencies {
     // Navigation 3 + Material3 adaptive
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
+    // Per-nav-entry ViewModelStoreOwner; without it koinViewModel() inside an entry would fall
+    // back to the Activity store and outlive the destination.
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.adaptive)
     implementation(libs.androidx.adaptive.layout)
     implementation(libs.androidx.adaptive.navigation3)

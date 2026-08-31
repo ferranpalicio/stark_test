@@ -6,14 +6,23 @@ changes; it captures decisions that aren't obvious from the code alone.
 ## Architecture
 
 - Single `Activity` (`MainActivity`) + Jetpack Compose. No fragments, no multi-activity nav.
-- MVVM. **Exactly one root-level `ViewModel`**: `AppViewModel`, injected only in `StarkApp` (the
-  nav root). Feature screens (`features/bikelive`, `features/bikedata`, `features/sessions`,
-  `features/userdata`, `features/settings`) are stateless composables — they take plain data + lambda callbacks, never
-  a `ViewModel` reference. Keep it that way: if a screen needs new state, add it to `AppUiState`
-  and thread it down from `StarkApp`, don't inject a scoped ViewModel into the screen.
+- MVVM. `AppViewModel` is the root-level ViewModel, injected in `StarkApp` (the nav root); it owns
+  cross-cutting state only — `isRiding`, user, bike overview, live telemetry. State that belongs to
+  a single destination gets its own ViewModel + UI-state class, resolved *inside* that
+  destination's `entry<T> { }` block where `koinViewModel()` is entry-scoped (see the decorator
+  note below). `SessionsViewModel` / `SessionsUiState` is the worked example. Screens
+  (`features/bikelive`, `features/bikedata`, `features/sessions`, `features/userdata`,
+  `features/settings`) stay stateless composables — they take plain data + lambda callbacks and
+  never hold a `ViewModel` reference; the `entry` block collects the state and passes it down.
 - Navigation via Navigation 3 (`androidx.navigation3`). `entry<T> { }` is a member function of the
   `entryProvider { }` lambda receiver, not a top-level import — don't add
   `import androidx.navigation3.runtime.entry`, it doesn't exist.
+- `NavDisplay` in `StarkApp` passes an explicit `entryDecorators` list:
+  `rememberSaveableStateHolderNavEntryDecorator()` (the library default, and a prerequisite of the
+  next one) plus `rememberViewModelStoreNavEntryDecorator()` from
+  `androidx.lifecycle:lifecycle-viewmodel-navigation3`. Without the second, `koinViewModel()`
+  inside an entry falls back to the Activity's store and outlives its destination. Nav3 1.1.7 has
+  no `rememberSavedStateNavEntryDecorator` — don't reach for it.
 - Material 3 `adaptive`: compact-only, bottom `NavigationBar` in portrait, `NavigationRail` in
   landscape via `currentWindowAdaptiveInfo().windowSizeClass.windowHeightSizeClass`. No
   multi-pane/list-detail scenes are implemented (out of scope for a compact-only app).
